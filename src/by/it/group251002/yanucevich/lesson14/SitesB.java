@@ -3,124 +3,87 @@ package by.it.group251002.yanucevich.lesson14;
 import java.util.*;
 
 public class SitesB {
-    private static class DSU {
-        private class node {
-            public String data;
-            public node parent;
-            public int rank;
-            public int size;
-        }
-        private int counter=0;
-        final private Map<String, node> theSet = new HashMap<>();
 
-        public int getCount() {
-            return counter;
-        }
+    static class DSUNode{
 
-        public void DSU(String member) {
-            node newSet = new node();
-            newSet.data = member;
-            newSet.rank = 0;
-            newSet.size = 1;
-            newSet.parent = newSet;
-
-            theSet.put(member, newSet);
+        String data;
+        int rank;
+        DSUNode parent;
+        int size;
+        public DSUNode(String data){
+            this.data = data;
+            this.rank = 0;
+            this.parent = this;
+            this.size = 1;
         }
 
-        public void make_set(String v) {
-            node newSet = new node();
-            newSet.data = v;
-            newSet.rank = 0;
-            newSet.parent = newSet;
-
-            theSet.put(v, newSet);
-            counter++;
-        }
-
-        public String findSet(String mem) {
-            return findSet(theSet.get(mem)).data;
-        }
-
-        node findSet(node node) {
-            DSU.node parent = node.parent;
-            if (node != parent) {
-                return node.parent = findSet(node.parent);
+        public static DSUNode getRoot(DSUNode node){
+            if (node.parent == node){
+                return node;
             }
-            return parent;
-        }
-
-        public boolean contains(String A) {
-            return theSet.containsKey(A);
-        }
-
-        public void union(String memberA, String memberB) {
-            String rootA = findSet(memberA);
-            String rootB = findSet(memberB);
-            if (Objects.equals(rootA, rootB)) {
-                return;
+            else{
+                DSUNode result = getRoot(node.parent);
+                node.parent = result;
+                return result;
             }
+        }
 
-            node nodeA = theSet.get(rootA);
-            node nodeB = theSet.get(rootB);
-            if (nodeA.rank == nodeB.rank) {
-                nodeB.parent = nodeA;
-                nodeA.rank++;
-                nodeA.size += nodeB.size;
-            } else {
-                if (nodeA.rank < nodeB.rank) {
-                    nodeA.parent = nodeB;
-                    nodeB.size += nodeA.size;
-                } else {
-                    nodeB.parent = nodeA;
-                    nodeA.size += nodeB.size;
+        public static void merge(DSUNode n1, DSUNode n2){
+            DSUNode nr1 = getRoot(n1);
+            DSUNode nr2 = getRoot(n2);
+
+            if (nr1!=nr2){
+                if(nr1.rank>nr2.rank){
+                    nr2.parent = nr1;
+                    nr1.size+=nr2.size;
+                }
+                else if(nr1.rank<nr2.rank){
+                    nr1.parent = nr2;
+                    nr2.size+=nr1.size;
+                }
+                else{
+                    nr1.parent = nr2;
+                    nr2.size+=nr1.size;
+                    nr2.rank++;
                 }
             }
-        }
-
-        public int getSize(String mem) {
-            return findSet(theSet.get(mem)).size;
         }
     }
+
     public static void main(String[] args) {
-        Scanner scanner = new Scanner(System.in);
-
-        DSU myDSU = new DSU();
-        HashSet<String> set = new HashSet<>();
-
-        while (true) {
-            String input = scanner.nextLine();
-
-            if (input.equals("end")) {
-                break;
+        Map<String, DSUNode> nodeMap = new HashMap<>();
+        Scanner scan = new Scanner(System.in);
+        String input = scan.nextLine();
+        while(!input.equals("end")) {
+            // put the sites in the map if they don't exist yet
+            // and then merge them
+            String sites[] = input.split("\\+");
+            if(!nodeMap.containsKey(sites[0])){
+                nodeMap.put(sites[0],new DSUNode(sites[0]));
             }
-
-            String[] sites = input.split("\\+");
-
-            for (String site : sites) {
-                if (!myDSU.contains(site)) {
-                    myDSU.DSU(site);
-                }
-                if (!set.contains(site)){
-                    set.add(site);
-                }
+            if(!nodeMap.containsKey(sites[1])){
+                nodeMap.put(sites[1],new DSUNode(sites[1]));
             }
-            myDSU.union(sites[0], sites[1]);
+            DSUNode.merge(nodeMap.get(sites[0]),nodeMap.get(sites[1]));
+
+            input = scan.nextLine();
+        }
+        scan.close();
+
+        Map<String,Integer> clusterCount = new HashMap<>();
+        for (String s : nodeMap.keySet()) {
+            DSUNode root = DSUNode.getRoot(nodeMap.get(s));
+            clusterCount.put(root.data, root.size);
         }
 
-        scanner.close();
+        ArrayList<Integer> outValues = new ArrayList<Integer>();
+        outValues.addAll(clusterCount.values());
 
-        Map<String, Integer> szMap = new HashMap<>();
-        for (String site : set) {
-            String root = myDSU.findSet(site);
-            szMap.put(root, myDSU.getSize(site));
-        }
-        ArrayList<Integer> temp = new ArrayList<Integer>();
-        temp.addAll(szMap.values());
+        Collections.sort(outValues);
+        Collections.reverse(outValues);
 
-        Collections.sort(temp);
-        Collections.reverse(temp);
+        for (int value : outValues)
+            System.out.print(value + " ");
 
-        for (int item : temp)
-            System.out.print(item + " ");
     }
 }

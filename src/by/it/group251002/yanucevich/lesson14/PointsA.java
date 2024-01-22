@@ -3,91 +3,107 @@ package by.it.group251002.yanucevich.lesson14;
 import java.util.*;
 
 public class PointsA {
-    private static class DSU {
-        private class node {
-            public int data;
-            public node parent;
-            public int rank;
-        }
-        private Map<Integer, node> nodeSet = new HashMap<>();
-        public void make_set(int v) {
-            node newSet = new node();
-            newSet.data = v;
-            newSet.rank = 0;
-            newSet.parent = newSet;
 
-            nodeSet.put(v, newSet);
+    private static class DSUNode{
+        int x;
+        int y;
+        int z;
+        int index;
+        DSUNode parent;
+        int rank;
+        public DSUNode(int index, int x, int y, int z){
+            this.x=x;
+            this.y=y;
+            this.z=z;
+            this.parent = this;
+            this.rank = 0;
+            this.index = index;
         }
+    }
 
-        public int findSet(int mem) {
-            return findSet(nodeSet.get(mem)).data;
+    static DSUNode getRoot(DSUNode node){
+        if (node.parent==node){
+            return node;
         }
+        else{
+            return getRoot(node.parent);
+        }
+    }
 
-        node findSet(node node) {
-            DSU.node parent = node.parent;
-            if (node != parent) {
-                return node.parent = findSet(node.parent);
+    public static void mergeNodes(DSUNode node1, DSUNode node2){
+        DSUNode nr1 = getRoot(node1);
+        DSUNode nr2 = getRoot(node2);
+
+        if (nr1 != nr2){
+            if(nr1.rank > nr2.rank){
+                nr2.parent=nr1;
             }
-            return parent;
-        }
-
-        public void union(int memberA, int memberB) {
-            int rootA = findSet(memberA);
-            int rootB = findSet(memberB);
-            if (Objects.equals(rootA, rootB)) {
-                return;
+            else if (nr1.rank<nr2.rank) {
+                nr1.parent = nr2;
             }
-
-            node nodeA = nodeSet.get(rootA);
-            node nodeB = nodeSet.get(rootB);
-            if (nodeA.rank == nodeB.rank) {
-                nodeB.parent = nodeA;
-                nodeA.rank++;
-            } else {
-                if (nodeA.rank < nodeB.rank) {
-                    nodeA.parent = nodeB;
-                } else {
-                    nodeB.parent = nodeA;
-                }
+            else{
+                nr1.parent = nr2;
+                nr2.rank++;
             }
         }
     }
-    static boolean check(int[][] points, int a, int b, int max_dist){
-        return Math.hypot(Math.hypot(points[a][0] - points[b][0], points[a][1] - points[b][1]), points[a][2] - points[b][2])<=max_dist;
+
+    public static boolean mergeCond(DSUNode node1, DSUNode node2, int maxDist){
+        return Math.hypot(Math.hypot(node1.x - node2.x, node1.y - node2.y), node1.z - node2.z)<=maxDist;
     }
+
+    static int getClusterIndex(DSUNode node){
+        if(node.parent==node){
+            return node.index;
+        }
+        else{
+            return getClusterIndex(node.parent);
+        }
+    }
+
     public static void main(String[] args) {
-        int size = 0;
-        Scanner scanner = new Scanner(System.in);
-        int distMax = scanner.nextInt();
-        int distMin = scanner.nextInt();
-        int[][] points = new int[distMin][3];
-        DSU myDSU = new DSU();
+        Map<Integer, DSUNode> nodeMap = new HashMap<>();
+        Scanner scan = new Scanner(System.in);
+        int acceptDist = scan.nextInt();
+        int nOfDots = scan.nextInt();
 
-        for(int i = 0; i < distMin; i++){
-            for(int j = 0; j < 3; j++)
-                points[size][j] = scanner.nextInt();
-            myDSU.make_set(size++);
+        // creation of a new DSU node is:
+        //      add it to the DSU map
+        //      make it the parent of itself
+        // AFTER:
+        //      merge the nodes based on the rank?
+        int x, y, z;
+        for(int i = 0; i<nOfDots;i++){
+            x=scan.nextInt();
+            y=scan.nextInt();
+            z=scan.nextInt();
+            nodeMap.put(i, new DSUNode(i,x,y,z));
         }
 
-        for(int i = 0; i < distMin; i++)
-            for(int j = i+1; j < distMin; j++)
-                if(check(points,i,j,distMax)){
-                    myDSU.union(i,j);
+        scan.close();
+        for(int i = 0; i < nOfDots; i++){
+            for (int j = i+1; j<nOfDots; j++){
+                if(mergeCond(nodeMap.get(i),nodeMap.get(j),acceptDist)){
+                    mergeNodes(nodeMap.get(i), nodeMap.get(j));
                 }
+            }
+        }
 
-        int[] dsuSize = new int[distMin];
-        for(int i = 0; i < distMin; i++){
-            dsuSize[myDSU.findSet(i)]++;
+
+        int clusterCount[] = new int[nOfDots];
+        // do not know Java
+        for(int i=0;i<nOfDots;i++){
+            clusterCount[i] = 0;
         }
-        Arrays.sort(dsuSize);
-        StringBuilder sb = new StringBuilder();
-        for(int i = distMin-1; i >= 0; i--){
-            if (dsuSize[i]==0)
-                break;
-            sb.append(dsuSize[i]);
-            sb.append(" ");
+        for(int i=0;i<nOfDots;i++){
+            clusterCount[getClusterIndex(nodeMap.get(i))]++;
         }
-        sb.deleteCharAt(sb.length()-1);
-        System.out.println(sb);
+        Arrays.sort(clusterCount);
+        int i=0;
+        while (i<nOfDots && clusterCount[nOfDots-i-1]!=0){
+            System.out.print(clusterCount[nOfDots-i-1]+" ");
+            i++;
+        }
+
     }
 }
